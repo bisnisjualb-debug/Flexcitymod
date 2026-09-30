@@ -12,32 +12,12 @@ jobs:
         id: ndk
         with:
           ndk-version: r25c
-      - name: Clone and build ShadowHook
+      - name: Build
         run: |
-          git clone --recursive https://github.com/bytedance/android-inline-hook.git shadowhook_src
-          cd shadowhook_src
-          mkdir -p build && cd build
-          cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE=${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake \
-            -DANDROID_ABI=armeabi-v7a \
-            -DANDROID_PLATFORM=android-24 \
-            -DCMAKE_BUILD_TYPE=Release
-          cmake --build . -j4
-          cd ../..
-      - name: Build lib mod
-        run: |
-          mkdir -p jni
-          cp native-lib.cpp jni/
-          SH_LIB=$(find shadowhook_src -name "libshadowhook.a" | head -n1)
-          SH_INC=$(dirname $(find shadowhook_src -name "shadowhook.h" | head -n1))
-          echo "SH_LIB=$SH_LIB"
-          echo "SH_INC=$SH_INC"
-          printf 'LOCAL_PATH := $(call my-dir)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := shadowhook\nLOCAL_SRC_FILES := %s\ninclude $(PREBUILT_STATIC_LIBRARY)\ninclude $(CLEAR_VARS)\nLOCAL_MODULE := flexcitymod\nLOCAL_SRC_FILES := native-lib.cpp\nLOCAL_C_INCLUDES := %s\nLOCAL_STATIC_LIBRARIES := shadowhook\nLOCAL_LDLIBS := -llog\nLOCAL_CFLAGS := -std=c++17 -fPIC\ninclude $(BUILD_SHARED_LIBRARY)\n' "$SH_LIB" "$SH_INC" > jni/Android.mk
-          printf 'APP_ABI := armeabi-v7a\nAPP_PLATFORM := android-24\nAPP_STL := c++_static\n' > jni/Application.mk
           ${{ steps.ndk.outputs.ndk-path }}/ndk-build \
             NDK_PROJECT_PATH=. \
-            APP_BUILD_SCRIPT=jni/Android.mk \
-            NDK_APPLICATION_MK=jni/Application.mk \
+            APP_ABI=armeabi-v7a \
+            APP_PLATFORM=android-24 \
             NDK_OUT=out \
             NDK_LIBS_OUT=libs
       - uses: actions/upload-artifact@v4
