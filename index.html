@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Man Website - Premium Services</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html {
+            width: 100%; height: 100%; overflow: hidden;
+            background-color: #05050a;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+        }
+
+        /* --- KANVAS TUNNEL NEON --- */
+        #cyberCanvas {
+            position: fixed; inset: 0; z-index: 10;
+            width: 100%; height: 100%;
+            transition: opacity 1.5s ease, filter 1.5s ease;
+            cursor: crosshair;
+        }
+        #cyberCanvas.fade-out { opacity: 0; filter: blur(15px); pointer-events: none; }
+
+        /* --- CRT SCANLINE EFFECT --- */
+        .scanlines {
+            position: fixed; inset: 0; z-index: 15;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            opacity: 0.6;
+            transition: opacity 1s ease;
+        }
+        .scanlines.hidden { opacity: 0; }
+
+        /* --- INTRO UI (OVERLAY AWAL) --- */
+        #intro-layer {
+            position: fixed; inset: 0; z-index: 20;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+        #intro-layer.hidden { opacity: 0; display: none; pointer-events: none; }
+
+        .glitch-text {
+            font-size: clamp(2rem, 5vw, 4.5rem);
+            font-weight: 900; color: #fff;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            position: relative;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            margin-bottom: 40px; text-align: center;
+            opacity: 0; animation: fadeIn 1.5s forwards 1s;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.8;
+        }
+        .glitch-text::before { left: 3px; text-shadow: -2px 0 #ff00ff; animation: glitch-anim 2s infinite linear alternate-reverse; }
+        .glitch-text::after { left: -3px; text-shadow: -2px 0 #00ffff; animation: glitch-anim2 3s infinite linear alternate-reverse; }
+
+        #enter-btn {
+            pointer-events: auto; background: transparent;
+            border: 2px solid #00ffff; color: #00ffff;
+            padding: 16px 50px; font-size: 1rem; font-weight: bold;
+            letter-spacing: 0.3em; text-transform: uppercase;
+            cursor: pointer; position: relative; overflow: hidden;
+            opacity: 0; transform: translateY(20px);
+            transition: all 0.4s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+        #enter-btn.visible { opacity: 1; transform: translateY(0); }
+        #enter-btn:hover {
+            background: #00ffff; color: #000;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        #flash {
+            position: fixed; inset: 0; z-index: 30;
+            background: #00ffff; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease; mix-blend-mode: screen;
+        }
+        #flash.active { opacity: 1; }
+
+        /* --- MAIN WEBSITE (KONTEN UTAMA) --- */
+        #website-content {
+            position: relative; z-index: 1;
+            width: 100%; height: 100%;
+            overflow-y: auto; overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            background: #05050a;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0; transform: scale(1.02);
+            transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
+            padding: 60px 20px 80px 20px;
+        }
+        #website-content.show { opacity: 1; transform: scale(1); }
+
+        .section-title {
+            font-size: 1.5rem; color: #00ffff;
+            text-transform: uppercase; letter-spacing: 0.2em;
+            margin: 50px 0 30px 0; text-align: center;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            padding-bottom: 10px; width: 100%; max-width: 900px;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; width: 100%; max-width: 900px; }
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.5); margin-bottom: 10px;
+        }
+        .header h1 span { color: #ff00ff; text-shadow: 0 0 30px rgba(255, 0, 255, 0.9); }
+        .header p { color: #00ffff; letter-spacing: 0.2em; font-size: 0.9rem; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px; width: 100%; max-width: 900px; margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 8px; padding: 25px 15px;
+            text-align: center; position: relative;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #00ffff;
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.15);
+        }
+
+        .card.premium { border-color: #ff00ff; background: rgba(20, 5, 20, 0.8); }
+        .card.premium:hover { box-shadow: 0 10px 30px rgba(255, 0, 255, 0.2); }
+        .card.premium .price { color: #ff00ff; text-shadow: 0 0 15px rgba(255, 0, 255, 0.5); }
+        .card.premium .buy-btn { border-color: #ff00ff; color: #ff00ff; }
+        .card.premium .buy-btn:hover { background: #ff00ff; color: #000; }
+
+        .card .badge {
+            position: absolute; top: 15px; right: -30px;
+            background: #ff00ff; color: #000; font-weight: bold; font-size: 0.7rem;
+            padding: 5px 40px; transform: rotate(45deg); letter-spacing: 0.1em;
+        }
+
+        .card h3 { font-size: 1rem; color: #fff; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 15px; }
+        .card .price { font-size: 2.2rem; font-weight: 900; color: #00ffff; text-shadow: 0 0 15px rgba(0, 255, 255, 0.5); margin-bottom: 5px; }
+        .card .duration { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; }
+
+        .buy-btn {
+            display: inline-block; width: 100%;
+            padding: 10px 0; background: transparent;
+            border: 1px solid #00ffff; color: #00ffff;
+            text-transform: uppercase; font-weight: bold; letter-spacing: 0.1em;
+            cursor: pointer; transition: all 0.3s ease; text-decoration: none; font-size: 0.85rem;
+        }
+        .buy-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+
+        .features { width: 100%; max-width: 900px; text-align: center; margin-bottom: 40px; }
+        .features ul { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .features li {
+            background: rgba(0, 255, 255, 0.05); border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; color: #ccc;
+        }
+        .features li::before { content: '✓ '; color: #00ffff; }
+
+        .billing-container {
+            width: 100%; max-width: 900px;
+            background: rgba(10, 10, 20, 0.9);
+            border: 1px solid #ff00ff;
+            border-radius: 8px; padding: 30px;
+            text-align: center; box-shadow: 0 0 30px rgba(255, 0, 255, 0.15);
+            margin-bottom: 50px;
+        }
+        .billing-container h2 { color: #ff00ff; margin-bottom: 15px; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.15em;}
+        .billing-container p { color: #ccc; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;}
+        .billing-container strong { color: #fff; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;}
+
+        .contact-methods {
+            display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+        }
+        .contact-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 14px 40px; border-radius: 4px; text-decoration: none;
+            font-weight: bold; letter-spacing: 0.1em; text-transform: uppercase;
+            font-size: 1rem; transition: all 0.3s ease;
+        }
+        .tg-btn { background: #0088cc; color: #fff; box-shadow: 0 0 15px rgba(0, 136, 204, 0.4); }
+        .tg-btn:hover { background: #fff; color: #0088cc; box-shadow: 0 0 25px rgba(0, 136, 204, 0.8); }
+
+        .jailbreak-section { width: 100%; max-width: 600px; text-align: center; margin-bottom: 50px; display: flex; flex-direction: column; gap: 15px;}
+
+        .jailbreak-btn, .group-btn, .testi-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 18px 40px;
+            text-transform: uppercase; font-weight: bold; letter-spacing: 0.15em;
+            text-decoration: none; font-size: 1rem; border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .jailbreak-btn {
+            background: rgba(255, 0, 255, 0.1);
+            border: 2px solid #ff00ff; color: #ff00ff;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+        }
+        .jailbreak-btn:hover { background: #ff00ff; color: #000; box-shadow: 0 0 40px rgba(255, 0, 255, 0.6); transform: scale(1.05); }
+
+        .group-btn {
+            background: rgba(0, 136, 204, 0.1);
+            border: 2px solid #0088cc; color: #00e5ff;
+            box-shadow: 0 0 20px rgba(0, 136, 204, 0.2);
+        }
+        .group-btn:hover { background: #0088cc; color: #000; box-shadow: 0 0 40px rgba(0, 136, 204, 0.6); transform: scale(1.05); }
+
+        .testi-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff; color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+        .testi-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 40px rgba(0, 255, 255, 0.6); transform: scale(1.05); }
+
+        @keyframes glitch-anim {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -2px); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -2px); }
+            20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, 2px); }
+            40% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
+            60% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 2px); }
+            80% { clip-path: inset(50% 0 30% 0); transform: translate(2px, -2px); }
+            100% { clip-path: inset(40% 0 40% 0); transform: translate(-2px, 2px); }
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #05050a; }
+        ::-webkit-scrollbar-thumb { background: #00ffff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="website-content">
+        <div class="header">
+            <h1>Man <span>Website</span></h1>
+            <p>Premium Services & Digital Store</p>
+        </div>
+
+        <h2 class="section-title">Sewa Bot WhatsApp</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>1 Day</h3>
+                <div class="price">2K</div>
+                <div class="duration">Akses 24 Jam</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20bot%20WA%201%20hari" target="_blank" class="buy-btn">Sewa Sekarang</a>
+            </div>
+            <div class="card">
+                <h3>10 Day</h3>
+                <div class="price">20K</div>
+                <div class="duration">Akses 10 Hari</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20bot%20WA%2010%20hari" target="_blank" class="buy-btn">Sewa Sekarang</a>
+            </div>
+            <div class="card premium">
+                <div class="badge">BEST</div>
+                <h3>Permanent</h3>
+                <div class="price">50K</div>
+                <div class="duration">Akses Selamanya</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20bot%20WA%20Permanent" target="_blank" class="buy-btn">Sewa Sekarang</a>
+            </div>
+        </div>
+        
+        <div class="features">
+            <ul>
+                <li>Full Update</li>
+                <li>Anti Banned</li>
+                <li>Respon Cepat</li>
+                <li>AI Canggih</li>
+                <li>Support 24/7</li>
+            </ul>
+        </div>
+
+        <h2 class="section-title">Sewa Panel Pterodactyl</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>1GB RAM</h3>
+                <div class="price">500P</div>
+                <div class="duration">Server Ringan</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20Panel%201GB" target="_blank" class="buy-btn">Beli</a>
+            </div>
+            <div class="card">
+                <h3>2GB RAM</h3>
+                <div class="price">1K</div>
+                <div class="duration">Standar Bot</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20Panel%202GB" target="_blank" class="buy-btn">Beli</a>
+            </div>
+            <div class="card">
+                <h3>3GB RAM</h3>
+                <div class="price">1.5K</div>
+                <div class="duration">Performa Ekstra</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20Panel%203GB" target="_blank" class="buy-btn">Beli</a>
+            </div>
+            <div class="card premium">
+                <div class="badge">BEST</div>
+                <h3>Unlimited</h3>
+                <div class="price">11K</div>
+                <div class="duration">Tanpa Batas</div>
+                <a href="https://t.me/Manbysk819?text=Halo%20saya%20mau%20sewa%20Panel%20Unlimited" target="_blank" class="buy-btn">Beli</a>
+            </div>
+        </div>
+
+        <h2 class="section-title">Proses Pembelian</h2>
+        <div class="billing-container">
+            <h2>Billing & Order Info</h2>
+            <p>
+                Yang mau sewa Bot atau beli Panel Pterodactyl, silakan DM Telegram:<br>
+                <a href="https://t.me/Manbysk819" target="_blank" style="color: #00ffff; font-size: 1.2rem; text-decoration: none; font-weight: bold; display: inline-block; margin: 10px 0; border-bottom: 1px dashed #00ffff;">@Manbysk819</a>
+                <br><br>
+                Jika sudah melakukan pembayaran, sertakan <strong>Screenshot Bukti Transfer</strong>.<br>
+                <em style="color: #ff00ff; font-size: 0.8rem;">*Peringatan: Bukti transfer palsu akan otomatis diblokir permanen.</em>
+            </p>
+            <div class="contact-methods">
+                <a href="https://t.me/Manbysk819" target="_blank" class="contact-btn tg-btn">
+                    Chat Admin Telegram
+                </a>
+            </div>
+        </div>
+
+        <h2 class="section-title">Komunitas & AI</h2>
+        <div class="jailbreak-section">
+            <a href="https://t.me/+6lSA5-RmpC4xZDVl" target="_blank" class="jailbreak-btn">
+                Masuk ke Jailbreak AI
+            </a>
+            <a href="https://t.me/+qOlPAbAoKUJmOTVl" target="_blank" class="testi-btn">
+                Lihat Testimoni & Join Grup
+            </a>
+        </div>
+    </div>
+
+    <canvas id="cyberCanvas"></canvas>
+    <div class="scanlines" id="scanlines"></div>
+
+    <div id="intro-layer">
+        <div class="glitch-text" data-text="Man Website">Man Website</div>
+        <button id="enter-btn">Initialize</button>
+    </div>
+
+    <div id="flash"></div>
+
+    <script>
+        const canvas = document.getElementById('cyberCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const enterBtn = document.getElementById('enter-btn');
+        const flash = document.getElementById('flash');
+        const websiteContent = document.getElementById('website-content');
+        const introLayer = document.getElementById('intro-layer');
+        const scanlines = document.getElementById('scanlines');
+
+        let width, height, cx, cy;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let FOV = 500;
+
+        let particles = [];
+        let cameraX = 0, cameraY = 0;
+        let targetX = 0, targetY = 0;
+        let speed = 40; 
+        let timeline = 'intro'; 
+        let lastTime = 0;
+        
+        const COLORS = ['#00ffff', '#ff00ff', '#8a2be2', '#00ffff'];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            cx = width / 2;
+            cy = height / 2;
+            FOV = Math.max(width, height) * 0.6;
+        }
+        window.addEventListener('resize', resize);
+
+        class NeonParticle {
+            constructor() { this.reset(true); }
+
+            reset(randomZ = false) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 100 + Math.random() * 800;
+                
+                this.x = Math.cos(angle) * radius;
+                this.y = Math.sin(angle) * radius;
+                this.z = randomZ ? Math.random() * 2000 : 2000;
+                
+                this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                this.size = Math.random() * 2 + 1.5;
+                this.speedMult = Math.random() * 0.5 + 0.5;
+                
+                this.prevX = 0; this.prevY = 0; this.hasPrev = false;
+            }
+
+            update() {
+                this.z -= speed * this.speedMult;
+                this.prevX = this.sx; this.prevY = this.sy;
+                this.hasPrev = true;
+
+                if (this.z > 0) {
+                    const scale = FOV / this.z;
+                    this.sx = cx + (this.x - cameraX) * scale;
+                    this.sy = cy + (this.y - cameraY) * scale;
+                    this.projSize = this.size * scale;
+                    this.alpha = Math.min(1, (2000 - this.z) / 1000);
+                }
+
+                if (this.z < 10) { this.reset(); this.hasPrev = false; }
+            }
+
+            draw(c) {
+                if (this.z <= 0 || this.z > 2000 || !this.hasPrev) return;
+                
+                c.globalAlpha = this.alpha;
+                c.strokeStyle = this.color;
+                c.lineWidth = Math.max(1, this.projSize * 0.4);
+                c.lineCap = 'round';
+
+                c.beginPath();
+                c.moveTo(this.prevX, this.prevY);
+                c.lineTo(this.sx, this.sy);
+                c.stroke();
+
+                if (this.projSize > 2) {
+                    c.fillStyle = '#ffffff';
+                    c.beginPath();
+                    c.arc(this.sx, this.sy, this.projSize * 0.3, 0, Math.PI * 2);
+                    c.fill();
+                }
+            }
+        }
+
+        function init() {
+            resize();
+            particles = [];
+            for (let i = 0; i < 250; i++) particles.push(new NeonParticle());
+            requestAnimationFrame((time) => {
+                lastTime = time;
+                requestAnimationFrame(animate);
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            targetX = (e.clientX - width / 2) * 0.5;
+            targetY = (e.clientY - height / 2) * 0.5;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                targetX = (e.touches[0].clientX - width / 2) * 0.5;
+                targetY = (e.touches[0].clientY - height / 2) * 0.5;
+            }
+        }, { passive: true });
+
+        enterBtn.addEventListener('click', () => {
+            if (timeline !== 'idle') return;
+            timeline = 'exiting';
+            flash.classList.add('active');
+            
+            introLayer.classList.add('hidden');
+            scanlines.classList.add('hidden');
+            
+            setTimeout(() => {
+                canvas.classList.add('fade-out');
+                setTimeout(() => {
+                    websiteContent.classList.add('show');
+                    flash.classList.remove('active');
+                    setTimeout(() => { canvas.style.display = 'none'; }, 2000);
+                }, 800);
+            }, 100);
+        });
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            if (!lastTime) lastTime = time;
+            const dt = Math.min((time - lastTime) / 16.66, 2);
+            lastTime = time;
+
+            if (timeline === 'intro') {
+                speed += (8 - speed) * 0.05 * dt;
+                if (speed < 8.5) {
+                    timeline = 'idle';
+                    enterBtn.classList.add('visible');
+                }
+            } else if (timeline === 'idle') {
+                speed = 8;
+            } else if (timeline === 'exiting') {
+                speed += 100 * dt;
+            }
+
+            cameraX += (targetX - cameraX) * 0.05 * dt;
+            cameraY += (targetY - cameraY) * 0.05 * dt;
+
+            ctx.fillStyle = 'rgba(5, 5, 10, 0.5)'; 
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (let i = 0; i < particles.length; i++) particles[i].update();
+            particles.sort((a, b) => b.z - a.z);
+            for (let i = 0; i < particles.length; i++) particles[i].draw(ctx);
+
+            const glowGrad = ctx.createRadialGradient(cx - cameraX*0.5, cy - cameraY*0.5, 0, cx - cameraX*0.5, cy - cameraY*0.5, 300);
+            glowGrad.addColorStop(0, 'rgba(0, 255, 255, 0.15)');
+            glowGrad.addColorStop(0.5, 'rgba(255, 0, 255, 0.05)');
+            glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        init();
+    </script>
+</body>
+</html>
